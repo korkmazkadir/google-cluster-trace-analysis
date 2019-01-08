@@ -11,21 +11,73 @@ def writeToCSV(dataFrame, fileName):
   dataFrame.coalesce(1).write.mode('append').format('com.databricks.spark.csv').options(header='true').save("../output/".format(fileName))
 
 
-SELECT_UNIQUE_MACHINE_ADD_EVENTS = '''
-SELECT 
-    distinct
-    machine_id,
-    platform_id,
-    cpu,
-    memory
-FROM macine_events WHERE event_type = 0
-'''
-
 
 SELECT_TASK_SCHEDULE_EVENTS = '''
 SELECT  * 
 FROM task_events
 WHERE event_type = 1
+'''
+
+SELECT_TASK_MACHINE_DATA= '''
+SELECT
+    te.priority,
+    me.machine_id,
+    me.cpu,
+    me.memory,
+    (me.cpu + me.memory) / 2 as capacity
+FROM (
+
+    SELECT 
+        first(time) as time,
+        first(machine_id) as machine_id,
+        first(platform_id) as platform_id,
+        first(cpu) as  cpu ,
+        first(memory) as memory,
+        (first(cpu) + first(memory)) / 2 as capacity
+    FROM (
+        select * from macine_events order by time desc
+    ) me
+    GROUP BY machine_id
+    
+) me 
+INNER JOIN (
+    
+    SELECT 
+    distinct machine_id, priority
+    FROM task_events WHERE event_type = 1
+    
+) te on te.machine_id = me.machine_id
+
+'''
+
+SELECT_CPU_PRIORTY_RELATION= '''
+SELECT
+    priority,
+    cpu,
+    count(*) as count
+FROM task_machine_data
+GROUP BY priority,cpu
+ORDER BY priority,cpu
+'''
+
+SELECT_MEMORY_PRIORTY_RELATION= '''
+SELECT
+    priority,
+    memory,
+    count(*) as count
+FROM task_machine_data
+GROUP BY priority,memory
+ORDER BY priority,memory
+'''
+
+SELECT_CAPACITY_PRIORTY_RELATION= '''
+SELECT
+    priority,
+    capacity,
+    count(*) as count
+FROM task_machine_data
+GROUP BY priority,capacity
+ORDER BY priority,capacity
 '''
 
 
@@ -49,7 +101,7 @@ machineEvents = tokens.map(lambda p: Row( time=int(p[0]), machine_id=int(p[1]), 
 
 
 
-wholeFile = sc.textFile("../clusterdata-2011-2/task_events/")
+wholeFile = sc.textFile("../clusterdata-2011-2/task_events")
 
 # split each line into an array of items
 tokens = wholeFile.map(lambda x : x.split(','))
@@ -87,23 +139,28 @@ schemaTaskScheduleEvents.show();
 schemaMachineEvents = sqlContext.createDataFrame(machineEvents)
 schemaMachineEvents.registerTempTable("macine_events")
 
-uniqueAddEvents = sqlContext.sql(SELECT_UNIQUE_MACHINE_ADD_EVENTS)
-uniqueAddEvents.registerTempTable("unique_machine_add_events")
+'''
+taskMachineData = uniqueAddEvents.alias("u").join(schemaTaskScheduleEvents.alias("s"), uniqueAddEvents.machine_id == schemaTaskScheduleEvents.machine_id )   .select("u.cpu","u.memory","u.capacity","s.job_id","s.task_index","s.priority","s.cpu_request","s.memory_request");
 
-uniqueAddEvents.show();
+taskMachineData.show();
+'''
+taskMachineData = sqlContext.sql(SELECT_TASK_MACHINE_DATA).cache()
+taskMachineData.registerTempTable("task_machine_data")
+taskMachineData.show();
 
-print("machine add event count : {}".format(uniqueAddEvents.count()))
+cpuPriorityRelation = sqlContext.sql(SELECT_CPU_PRIORTY_RELATION).cache()
+cpuPriorityRelation.show() 
 
+memoryPriorityRelation = sqlContext.sql(SELECT_MEMORY_PRIORTY_RELATION).cache()
+memoryPriorityRelation.show() 
 
-taskMachineData = uniqueAddEvents.alias("u").join(schemaTaskScheduleEvents.alias("s"), uniqueAddEvents.machine_id == schemaTaskScheduleEvents.machine_id )   .select("u.cpu","u.memory","s.job_id","s.task_index","s.priority","s.cpu_request","s.memory_request");
-
-#taskMachineData.show();
-
+capacityPriorityRelation = sqlContext.sql(SELECT_CAPACITY_PRIORTY_RELATION).cache()
+capacityPriorityRelation.show() 
 
 print("Writing to the csv file...")
 
-writeToCSV(taskMachineData,"task-machine-data.csv")
-#writeToCSV(machineDistAccordingToMemorCapacity,"machine-distribution-according-to-memory-capacity.csv")
-#writeToCSV(machineDistAccordingToPlatform,"machine-distribution-according-to-platform.csv")
+writeToCSV(cpuPriorityRelation,"priority-cpu.csv")
+writeToCSV(memoryPriorityRelation,"priority-memory.csv")
+writeToCSV(capacityPriorityRelation,"priority-capacity.csv")
 
 print("End of write.")
