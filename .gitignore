@@ -2,6 +2,8 @@ clusterdata-2011-2/*
 input/*
 output/*
 
+.DS_Store
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
