@@ -1,0 +1,68 @@
+---
+title: "Google Cluster Trace Analysis with Apache Spark"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+In this work, I analysed [Google cluster-usage traces](https://github.com/google/cluster-data/blob/master/ClusterData2011_2.md) using Apache Spark and I created the document using R Studio.
+
+You can access the subject of this work from [this](https://tropars.github.io/downloads/lectures/LSDM/LSDM-lab-spark-google.pdf) link.
+You can find the detailed documantatin of traces from [this](https://drive.google.com/file/d/0B5g07T_gRDg9Z0lsSTEtTWtpOW8/view)  link.
+
+**This version of the code does not contains the Spark codes which are used to extract information from the traces also this is not the final version. There is no guarante related to correctness of the results.**
+
+```{r setup, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(gridExtra)
+library(grid)
+library(data.table)
+library(ggplot2)
+
+formatNumber<-function(number){
+  return(format(number, big.mark=","))
+}
+
+formatDataFrame<-function(df){
+  return(format.data.frame(df, big.mark=","))
+}
+
+```
+
+\pagebreak
+
+#Machine Distibution
+## Machine Distibution According to CPU and Memory Capacity
+
+```{r echo=FALSE}
+library(ggplot2)
+library(ggExtra)
+library(knitr)
+
+machineDistribution = 
+  read.csv("./result/question-1/machine-dist-cpu-memory-capacity.csv", header = TRUE)
+
+
+p=ggplot(machineDistribution, aes(x=cpu, y=memory, color=cpu, size=number_of_machines, label=number_of_machines)) +
+      geom_point() + 
+      geom_text(aes(label=number_of_machines),hjust=0, size=4, nudge_x= 0.025) +
+      theme(legend.position="none") 
+
+p +  scale_x_continuous(breaks=c(0.25,0.5,1)) + scale_y_continuous(breaks=unique(machineDistribution$memory))
+
+kable(machineDistribution,caption = "Tabular Data")
+
+```
+
+\pagebreak
+
+## Machine Distibution According to Platform
+```{r echo=FALSE}
+
+machineDistribution = 
+  read.csv("./result/question-1/machine-dist-platform.csv", header = TRUE)
+
+kable(machineDistribution)
+
+```
+
