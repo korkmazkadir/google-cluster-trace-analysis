@@ -31,7 +31,7 @@ formatDataFrame<-function(df){
 
 \pagebreak
 
-#Machine Distibution
+#1. Machine Distibution
 ## Machine Distibution According to CPU and Memory Capacity
 
 ```{r echo=FALSE}
@@ -66,3 +66,60 @@ kable(machineDistribution)
 
 ```
 
+
+#2. Job and Task Counts
+
+
+```{r, echo=FALSE}
+jobTaskCount = 
+  read.csv("./result/question-2/job-task-count.csv", header = TRUE)
+
+df <- data.frame(
+  "number_of_jobs" = c(formatNumber( nrow(jobTaskCount) )), 
+  "number_of_tasks" = c(formatNumber( sum(jobTaskCount$task_count) )),
+  "avg_number_of_task_count" = c(formatNumber( mean(jobTaskCount$task_count) ))
+  )
+
+kable(df)
+
+summary<-summary(jobTaskCount$task_count)
+
+summaryDF <- data.frame(unclass(summary), check.names = FALSE, stringsAsFactors = FALSE)
+colnames(summaryDF)<- c("statistics")
+
+kable(summaryDF)
+
+```
+
+
+#3. Job/Task Life Cycle Analysis (Killed and Evicted Job/Task)
+
+
+```{r, echo=FALSE}
+priorityLifeCycleStats = 
+  read.csv("./result/question-3/priority-task-life-cycle.csv", header = TRUE)
+
+colnames(priorityLifeCycleStats)[colnames(priorityLifeCycleStats) == 'evicted_task_count'] <- 'evicted_count'
+colnames(priorityLifeCycleStats)[colnames(priorityLifeCycleStats) == 'failed_task_count'] <- 'failed_count'
+colnames(priorityLifeCycleStats)[colnames(priorityLifeCycleStats) == 'killed_task_count'] <- 'killed_count'
+colnames(priorityLifeCycleStats)[colnames(priorityLifeCycleStats) == 'lost_task_count'] <- 'lost_count'
+colnames(priorityLifeCycleStats)[colnames(priorityLifeCycleStats) == 'distinct_task_count'] <- 'task_count'
+
+priorityLifeCycleStats$evicted_percent = round( priorityLifeCycleStats$evicted_count * 100 / priorityLifeCycleStats$task_count, 1 )
+priorityLifeCycleStats$failed_percent =  round( priorityLifeCycleStats$failed_count * 100 / priorityLifeCycleStats$task_count, 1 )
+priorityLifeCycleStats$killed_percent =  round( priorityLifeCycleStats$killed_count * 100 / priorityLifeCycleStats$task_count, 1 )
+priorityLifeCycleStats$lost_percent =  round( priorityLifeCycleStats$lost_count * 100 / priorityLifeCycleStats$task_count, 1 )
+
+#kable( formatDataFrame( priorityLifeCycleStats[,c("priority", "evicted_count", "failed_count", "killed_count", "lost_count", "task_count")]))
+kable( formatDataFrame( priorityLifeCycleStats[,c("priority","killed_percent", "evicted_percent", "failed_percent", "lost_percent", "task_count")]) )
+
+
+```
+
+
+#4. Eviction Probability of Tasks with Respect to Priority
+
+You can look the table of the question 3 to conclude about this.
+
+
+#5. Relation between the Priority of a Task and Machine Resources(CPU, Memory)
