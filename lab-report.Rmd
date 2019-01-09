@@ -123,3 +123,50 @@ You can look the table of the question 3 to conclude about this.
 
 
 #5. Relation between the Priority of a Task and Machine Resources(CPU, Memory)
+
+```{r echo=FALSE}
+library(ggplot2)
+library(ggExtra)
+library(knitr)
+
+
+priorityCapacityDataset = 
+  read.csv("./result/question-5/priority-machine-capacity-relation.csv", header = TRUE)
+
+
+# p=ggplot(priorityCapacityDataset, aes(x=capacity, y=priority, size=task_count, label=task_count)) +
+#       geom_point() + 
+#       #geom_text(aes(label=task_count),hjust=0, size=4, nudge_x= 0.025) +
+#       theme(legend.position="none", axis.text.x = element_text(angle = 50, hjust = 1)) 
+# 
+# p +  scale_x_continuous(breaks=priorityCapacityDataset$capacity) + 
+#   scale_y_continuous(breaks=unique(priorityCapacityDataset$priority))
+
+taskCountByPriority <- aggregate(priorityCapacityDataset$task_count, by=list(Category=priorityCapacityDataset$priority), FUN=sum)
+
+colnames(taskCountByPriority) <- c("priority","total_task_count")
+
+kable( formatDataFrame( taskCountByPriority ), caption="Task count by priority")
+
+
+machineDistribution = 
+  read.csv("./result/question-1/machine-dist-cpu-memory-capacity.csv", header = TRUE)
+kable(machineDistribution[,c("capacity","cpu", "memory", "machine_percentage")], caption="Machine distribution by capacity")
+
+priorityCapacityDataset <- merge(priorityCapacityDataset, taskCountByPriority, by = "priority")
+
+priorityCapacityDataset$task_percentage = round( priorityCapacityDataset$task_count * 100 /  priorityCapacityDataset$total_task_count, 1 ) 
+
+#Makes disceret axis
+priorityCapacityDataset$capacity <- as.character(priorityCapacityDataset$capacity)
+priorityCapacityDataset$priority <- as.character(priorityCapacityDataset$priority)
+
+#Order Values numerically
+priorityCapacityDataset$priority <- factor(priorityCapacityDataset$priority, levels = c("0","1","2","3","4","5","6","7","8","9","10","11"))
+
+ggplot(data = priorityCapacityDataset, aes(x = capacity, y = priority)) +
+  geom_tile(aes(fill = task_percentage), colour = "white") +
+  geom_text(aes(label=task_percentage),size=2,color="linen") +
+  theme(legend.position="none",axis.text.x = element_text(angle = 50, hjust = 1), panel.grid.major  = element_blank(),  panel.grid.minor  = element_blank())
+```
+
