@@ -8,8 +8,8 @@ from pyspark.sql.types import *
 #  return ','.join(str(d) for d in data)
 
 def writeToCSV(dataFrame, fileName):
-    dataFrame.coalesce(1).write.mode('append').format('com.databricks.spark.csv').options(header='true').save(
-        "../output/".format(fileName))
+    dataFrame.repartition(1).write.mode('append').format('com.databricks.spark.csv').options(header='true').save(
+        "../output/")
 
 
 
@@ -66,7 +66,7 @@ WHERE rr.cpu_request > mru.maximum_CPU_usage and rr.memory_request > mru.maximum
 
 import pyspark
 conf = pyspark.SparkConf()
-conf.set("spark.driver.memory", "12g")
+conf.set("spark.driver.memory", "11g")
 conf.setMaster("local[*]")
 
 # start spark with 1 worker thread
@@ -77,10 +77,49 @@ sc.setLogLevel("ERROR")
 sqlContext = SQLContext(sc)
 
 # read the input file into an RDD[String]
-wholeFile = sc.textFile("../clusterdata-2011-2/task_usage")
+#wholeFile = sc.textFile("../clusterdata-2011-2/task_usage")
 
 
 #wholeFile = sc.textFile("../clusterdata-2011-2/task_usage/part-00001-of-00500.csv.gz")
+
+
+############################################################################
+
+#wholeFile = sc.textFile("../clusterdata-2011-2/task_events/part-00497-of-00500.csv.gz")
+
+wholeFile = sc.textFile("../clusterdata-2011-2/task_events")
+
+# split each line into an array of items
+tokens = wholeFile.map(lambda x: x.split(','))
+
+# creates columns
+taskEvents = tokens.map(lambda p: Row(
+
+    time=int(p[0]),
+    missing_info=int(p[1] or 0),
+    job_id=int(p[2]),
+    task_index=int(p[3]),
+    machine_id=int(p[4] or 0),
+    event_type=int(p[5] or 0),
+    user=p[6],
+    scheduling_class=int(p[7] or 0),
+    priority=int(p[8] or 0),
+    cpu_request=float(p[9] or 0),
+    memory_request=float(p[10] or 0),
+    disk_space_request=float(p[11] or 0),
+    different_machine_restrictions=bool(p[12] or 0),
+))
+
+
+
+# Infer the schema, and register the macine_event as a table.
+schemaTaskEvents = sqlContext.createDataFrame(taskEvents)
+schemaTaskEvents.registerTempTable("task_events")
+
+################################################################################
+
+
+wholeFile = sc.textFile("../clusterdata-2011-2/task_usage")
 
 # split each line into an array of items
 tokens = wholeFile.map(lambda x: x.split(','))
@@ -116,42 +155,9 @@ taskUsage = tokens.map(lambda p: Row(
 schemaTaskUsage = sqlContext.createDataFrame(taskUsage)
 schemaTaskUsage.registerTempTable("task_usage")
 
-############################################################################
-
-#wholeFile = sc.textFile("../clusterdata-2011-2/task_events/part-00001-of-00500.csv.gz")
-
-wholeFile = sc.textFile("../clusterdata-2011-2/task_events")
-
-# split each line into an array of items
-tokens = wholeFile.map(lambda x: x.split(','))
-
-# creates columns
-taskEvents = tokens.map(lambda p: Row(
-
-    time=int(p[0]),
-    missing_info=int(p[1] or 0),
-    job_id=int(p[2]),
-    task_index=int(p[3]),
-    machine_id=int(p[4] or 0),
-    event_type=int(p[5] or 0),
-    user=p[6],
-    scheduling_class=int(p[7] or 0),
-    priority=int(p[8] or 0),
-    cpu_request=float(p[9] or 0),
-    memory_request=float(p[10] or 0),
-    disk_space_request=float(p[11] or 0),
-    different_machine_restrictions=bool(p[12] or 0),
-))
 
 
-
-# Infer the schema, and register the macine_event as a table.
-schemaTaskEvents = sqlContext.createDataFrame(taskEvents)
-schemaTaskEvents.registerTempTable("task_events")
-
-################################################################################
-
-taskRequestedMemoryCPU = sqlContext.sql(SELECT_REQUESTED_RESOURCE)
+taskRequestedMemoryCPU = sqlContext.sql(SELECT_REQUESTED_RESOURCE).cache()
 taskRequestedMemoryCPU.registerTempTable("resource_request")
 
 
@@ -164,10 +170,9 @@ joinedData = sqlContext.sql(SELECT_RESOURCE_REQUESTED_USED).cache()
 bins, cpu_percent = joinedData.select("used_cpu_percent").rdd.flatMap(lambda x: x).histogram(buckets)
 bins, memory_percent = joinedData.select("used_memory_percent").rdd.flatMap(lambda x: x).histogram(buckets)
 
-machineUtilization = sqlContext.sql(SELECT_MACHINE_UTILIZATION).cache()
 
 
-machineUtilization.show(100,False)
+machineUtilization = sqlContext.sql(SELECT_MACHINE_UTILIZATION)
 
 
 print(bins)
