@@ -146,12 +146,12 @@ taskCountByPriority <- aggregate(priorityCapacityDataset$task_count, by=list(Cat
 
 colnames(taskCountByPriority) <- c("priority","total_task_count")
 
-kable( formatDataFrame( taskCountByPriority ), caption="Task count by priority")
-
+#kable( formatDataFrame( taskCountByPriority ), caption="Task count by priority")
 
 machineDistribution = 
   read.csv("./result/question-1/machine-dist-cpu-memory-capacity.csv", header = TRUE)
-kable(machineDistribution[,c("capacity","cpu", "memory", "machine_percentage")], caption="Machine distribution by capacity")
+#kable(machineDistribution[,c("capacity","cpu", "memory", "machine_percentage")], caption="Machine distribution by capacity")
+
 
 priorityCapacityDataset <- merge(priorityCapacityDataset, taskCountByPriority, by = "priority")
 
@@ -169,4 +169,55 @@ ggplot(data = priorityCapacityDataset, aes(x = capacity, y = priority)) +
   geom_text(aes(label=task_percentage),size=2,color="linen") +
   theme(legend.position="none",axis.text.x = element_text(angle = 50, hjust = 1), panel.grid.major  = element_blank(),  panel.grid.minor  = element_blank())
 ```
+
+
+
+```{r results='asis', echo=FALSE}
+    # Setting `results = 'asis'` allows for using Latex within the code chunk
+    cat('\\begin{center}')
+    # `{c c}` Creates a two column table
+    # Use `{c | c}` if you'd like a line between the tables
+    cat('\\begin{tabular}{ c c }')
+    print(knitr::kable( formatDataFrame( taskCountByPriority ), format = 'latex'))
+    # Separate the two columns with an `&`
+    cat('&')
+    print(knitr::kable(machineDistribution[,c("capacity","cpu", "memory", "machine_percentage")], format = 'latex'))
+    cat('\\end{tabular}')
+    cat('\\end{center}')
+```
+
+From heatmap and machine distribution data we can conclude that tasks are uniformly distributed on machines.
+
+
+
+#7. Tasks consumes significantly less resource than what they requested
+
+```{r results='asis', echo=FALSE}
+
+bins <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100)
+
+memoryConsumption <- c(9403495, 162321, 212388, 488168, 528610, 594301, 829299, 598128, 485174, 514702, 602390, 509211, 521277, 507115, 512200, 559509, 624598, 661028, 796245, 1051587)
+
+cpuComnsumprion <- c(11828731, 3196895, 1439782, 1691237, 685753, 321222, 225548, 168018, 123777, 106177, 69096, 142918, 36677, 17153, 17901, 19113, 15198, 15081, 22789, 18680)
+
+consumptionDF <- data.frame(
+  "percentage"= c(2.5, 7.5, 12.5, 17.5, 22.5, 27.5, 32.5, 37.5, 42.5, 47.5, 52.5, 57.5, 62.5, 67.5, 72.5, 77.5, 82.5, 87.5, 92.5, 97.5),
+  "memory_consumption" = c(9403495, 162321, 212388, 488168, 528610, 594301, 829299, 598128, 485174, 514702, 602390, 509211, 521277, 507115, 512200, 559509, 624598, 661028, 796245, 1051587),
+  "cpu_consumption" = c(11828731, 3196895, 1439782, 1691237, 685753, 321222, 225548, 168018, 123777, 106177, 69096, 142918, 36677, 17153, 17901, 19113, 15198, 15081, 22789, 18680)
+)
+
+
+ggplot(consumptionDF, aes(x=percentage, y=memory_consumption)) +
+  geom_bar(stat="identity") + scale_x_continuous(breaks=c(0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100)) 
+
+ggplot(consumptionDF, aes(x=percentage, y=cpu_consumption)) +
+  geom_bar(stat="identity") + scale_x_continuous(breaks=c(0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100)) 
+
+
+```
+
+Adding some text :)
+
+
+
 
