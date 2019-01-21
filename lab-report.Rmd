@@ -14,12 +14,11 @@ output:
 
 #Abstract
 
-> 
-> In this worked, I have analysed the Google Cluster trace using Apache Spark. 
-> 
->
->
->
+
+> In this worked, I have analyzed the Google Cluster trace using Apache Spark. I have used the Data Frame API of Spark. I have conducted proposed analyses. Google Cluster trace contains data for 29 days. In the cluster, there are 12,583 machines. In the cluster, there is only 10 different kind of machine when we consider the CPU and memory. More than 90% of the machines have 0.5 CPU capacity. Only 6.32 percent of the machines have the highest CPU and memory capacity. Machines have three different kinds of hardware platforms. During the trace period, 672.004 Job is scheduled. Every job has one or more task. The total number of tasks is 25.4 million. The average number of task per job is 37.83. Because of eviction and killing scheduled task count 47.3 million. There is no linear relation between the priority of a task and probability of eviction but it is clear that some priority levels have a higher evicted and killed task percentage. There is no relation between the priority of a task and resources of the machines which task is scheduled. Tasks are almost uniformly distributed on machines. There is tasks which consume significantly fewer resources than what they requested. In the cluster, there is a maintenance or machine failure for every 279 seconds. There are 36 machines which are underutilized. 
+
+>The number of worker threads has a big effect on performance if there is enough input file to process for every worker thread. JVM memory size could affect performance in different ways. Caching has a big impact on performance. If it is possible to reuse an RDD, caching increasing performance linearly.
+
 
 
 #Introduction
@@ -113,7 +112,7 @@ kable(machineDistribution, caption="Machine distribution according to platform i
 
 \pagebreak
 
-##2. Job and Task Counts
+##2. On average, how many tasks compose a job?s
 
 I have used task events table to count the number of jobs and number of job per task. I have select distinct rows according to job_id and task_index then I grouped by according to job_id to count the number of task per job. Table 3 shows the total number of jobs, total number of tasks and average number of task per job.
 
@@ -148,6 +147,33 @@ kable(summaryDF, caption="Summary statistics of the number of task per job")
 
 ##3. Job/Task that got killed or evicted
 
+I have used job table and task event tables to count the number of evicted and killed jobs and tasks. Table 5 shows the figures related to job/task schedule, evicted and killed events.
+
+
+
+
+```{r,  echo=FALSE}
+# jobCounts = 
+#   read.csv("./result/question-3/job-counts.csv", header = TRUE)
+# 
+# taskCounts = 
+#   read.csv("./result/question-3/task-counts.csv", header = TRUE)
+
+
+jobTaskCouns <- data.frame(
+  "type" = c("Job","Task"),
+  #"unique_count" = c(672075, 25424731), 
+  "scheduled_count" = c(672075, 47351173),
+  "evicted_count" = c(22,5864353),
+  "killed_count" = c(272341,103496805)
+  )
+
+
+kable(formatDataFrame (jobTaskCouns) , caption = "Job/task evicted killed count")
+
+```
+
+
 
 
 
@@ -161,7 +187,7 @@ I have used task events table to calculate efiction percentages of tasks accordi
 
 ```{r, echo=FALSE}
 priorityLifeCycleStats = 
-  read.csv("./result/question-3/priority-task-life-cycle.csv", header = TRUE)
+  read.csv("./result/question-4/priority-task-life-cycle.csv", header = TRUE)
 
 colnames(priorityLifeCycleStats)[colnames(priorityLifeCycleStats) == 'evicted_task_count'] <- 'evicted_count'
 colnames(priorityLifeCycleStats)[colnames(priorityLifeCycleStats) == 'failed_task_count'] <- 'failed_count'
@@ -307,10 +333,12 @@ I think this analysis can be useful to answer the next question because
 *2- Are there any machine which is removed from cluster and did not added to back.*
 
 > *97* of the machines are removed from cluster and they are not added back.
-> This number could be helpful to answer the following question because some of the machines do not have any job scheduled on them.
+> This number could be helpful to make following analysis.
 
 
 ##8. Machines which resources are largely underused 
+
+In the cluster, there are 36 machines wich highly underused. I have query all the machine usage data to find the machines which are under used.
 
 
 
@@ -318,12 +346,26 @@ I think this analysis can be useful to answer the next question because
 
 ##1. Efect of Number of Worker Thread
 
+If there is enough input file to process than in this case number of worker threads effecting performance. If there is only one input file to process than number of worker threads has small performance effect.This Effect is not linear. For example to count all the distinct jobs in job tables with 8 worker thread takes 43 seconds. Same process takes 120 seconds with only one thread. For only one input file with single worker thread same job takes 15 seconds and with 8 worker thread it takes 14 seconds.
+
+
 ##2. Efect of JVM Memory Size
+
+Normally in the spark cluster there is two kind of process driver and executor.There is two different parameter to control the JVM memory size. These parameters are "spark.driver.memory" and "spark.executor.memory". Normall this two parameter have different effect but in our case "spark.executor.memory" parameter is not useful because we are running Spark in local mode which means that driver process spawning executor threads to do the processing so there is only one JVM which is dirver JVM. Because of this reason I can only assess the effect of "spark.driver.memory" parameter.
+
+When we increase the memory size of the driver process, we can easily observe via using system tools(system monitor, top, htop) driver JVM is instantiated with specified memory and it is using the reserved memory. Also for caching spark is using  memory on default so if there is enough memory caching effect could be big incase of all the cached data small enoug to fit in memory.
+
+During my study, I have java.lang.OutOfMemoryError incase of collecting huge amount of data at driver process. Arranging JVM memory size could solve this problem.
 
 ##3. Effect of Lazy Evaluation
 
+
+
 ##4. Effect of Cache
 
+Cache has a big impect to performance. In normal conditions spark is not caching RDD's. Assume that you are making a calculation and you are counting the number of elements in the RDD later you tried to save the RDD to a csv file. Without caching Spark will calculate same RDD two times, once for counting once for writing to csv file. With cachign it will only calculate once and it will use the result of the same calculation for counting and writing to csv file.
+
+At teh beginning of this study I was showing result of the RDD's and later I was tring to do further processing without caching. In this case, it was taking two times more time to finih the job. Later, I realized the effect of caching and I tried to used caching when it is necessary.
 
 #Conclution
 
