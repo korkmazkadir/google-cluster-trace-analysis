@@ -31,7 +31,7 @@ SELECT
   machine_id, 
   count(*) as scheduled_task_count
 FROM task_events
-WHERE event_type = 1
+WHERE event_type = 4
 GROUP BY machine_id
 '''
 
@@ -49,7 +49,7 @@ ORDER BY dtse.scheduled_task_count asc
 #### Driver program
 import pyspark
 conf = pyspark.SparkConf()
-#conf.set("spark.driver.memory", "11g")
+conf.set("spark.driver.memory", "11g")
 conf.setMaster("local[*]")
 
 # start spark with 1 worker thread
