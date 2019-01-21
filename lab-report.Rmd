@@ -15,19 +15,21 @@ output:
 #Abstract
 
 
-> In this worked, I have analyzed the Google Cluster trace using Apache Spark. I have used the Data Frame API of Spark. I have conducted proposed analyses. Google Cluster trace contains data for 29 days. In the cluster, there are 12,583 machines. In the cluster, there is only 10 different kind of machine when we consider the CPU and memory. More than 90% of the machines have 0.5 CPU capacity. Only 6.32 percent of the machines have the highest CPU and memory capacity. Machines have three different kinds of hardware platforms. During the trace period, 672.004 Job is scheduled. Every job has one or more task. The total number of tasks is 25.4 million. The average number of task per job is 37.83. Because of eviction and killing scheduled task count 47.3 million. There is no linear relation between the priority of a task and probability of eviction but it is clear that some priority levels have a higher evicted and killed task percentage. There is no relation between the priority of a task and resources of the machines which task is scheduled. Tasks are almost uniformly distributed on machines. There is tasks which consume significantly fewer resources than what they requested. In the cluster, there is a maintenance or machine failure for every 279 seconds. There are 36 machines which are underutilized. 
+> In this work, I have analyzed the Google Cluster trace using Apache Spark. I have used the Data Frame API of Spark. I have conducted proposed analyses. Google Cluster trace contains data for 29 days. In the cluster, there are 12,583 machines. In the cluster, there is only 10 different kind of machine when we consider the CPU and memory. More than 90% of the machines have 0.5 CPU capacity. Only 6.32 percent of the machines have the highest CPU and memory capacity. Machines have three different kinds of hardware platforms. During the trace period, 672.004 Job is scheduled. Every job has one or more task. The total number of tasks is 25.4 million. The average number of task per job is 37.83. Because of eviction and killing scheduled task count 47.3 million. There is no linear relation between the priority of a task and probability of eviction but it is clear that some priority levels have a higher evicted and killed task percentage. There is no relation between the priority of a task and resources of the machines which task is scheduled. Tasks are almost uniformly distributed on machines. There are tasks which consume significantly fewer resources than what they requested. In the cluster, there is a maintenance or machine failure for every 279 seconds. There is a machine which never a task scheduled. There are 45 machines which have less than 10 tasks scheduled. There are 52 machines which have not finished any task.
 
->The number of worker threads has a big effect on performance if there is enough input file to process for every worker thread. JVM memory size could affect performance in different ways. Caching has a big impact on performance. If it is possible to reuse an RDD, caching increasing performance linearly.
+>The number of worker threads has a big effect on performance if there is enough input file to process for every worker thread. JVM memory size affecting performance in different ways. Lazy evaluation mechanism of Spark creates an opportunity to Spark optimize user requests to return the results in a shortest possible time. Caching has a big impact on performance. If it is possible to reuse an RDD, caching increasing performance linearly.
 
 
 
 #Introduction
-In this work, I analysed [Google cluster-usage traces](https://github.com/google/cluster-data/blob/master/ClusterData2011_2.md) using Apache Spark and I created the document using R Studio.
+
+In this work, I have analyzed [Google cluster-usage traces](https://github.com/google/cluster-data/blob/master/ClusterData2011_2.md) using Apache Spark and I have created the document using R Studio.
 
 You can access the subject of this work from [this](https://tropars.github.io/downloads/lectures/LSDM/LSDM-lab-spark-google.pdf) link.
-You can find the detailed documantatin of traces from [this](https://drive.google.com/file/d/0B5g07T_gRDg9Z0lsSTEtTWtpOW8/view)  link.
+You can find the detailed documentation of traces from [this](https://drive.google.com/file/d/0B5g07T_gRDg9Z0lsSTEtTWtpOW8/view)  link.
 
-**This version of the code does not contains the Spark codes which are used to extract information from the traces also this is not the final version. There is no guarante related to correctness of the results.**
+You can access the details of this work and materials(source code, intermadiate results, CSV files) from [this](https://github.com/korkmazkadir/google-cluster-trace-analysis) link.
+
 
 ```{r setup, echo=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -49,13 +51,13 @@ formatDataFrame<-function(df){
 \pagebreak
 
 #Trace Analysis of the Cluster
-##1. Machine Distibution
+##1. Machine Distribution
 
-In this section, I have showed the distribution of the machines according to CPU and memory capacity. Also, I have showed machine distribution according to paltform type but this information is not significant because machine distirbution according to platform type is same with according to CPU
+In this section, I have shown the distribution of the machines according to CPU and memory capacity. Also, I have shown machine distribution according to platform type but this information is not significant because machine distribution according to platform type is same with according to CPU distribution.
 
-### Machine Distibution According to CPU and Memory Capacity
+### Machine Distribution According to CPU and Memory Capacity
 
-I have used machine events table to calculate machine distribution. In this table we have CPU and memory information of the machines. I have ordered data in decending order according to time then I have grouped by according to machine id. I get the first cpu and memory information from every group. So this machine distribution shows the final state of the cluster. It is possible to get slightly different machine distirbution according to ordering because cluster is not something static. It is changing with time. Graph 1 shows the machibe distribution according CPU and memory. From this graph it is easy to observe that more than 90% of the machines have 0.5 CPU and very few machines have 0.25 CPU.   
+I have used machine events table to calculate machine distribution. In this table, we have CPU and memory information of the machines. I have ordered data in descending order according to time then I have grouped by according to machine id. I get the first CPU and memory information from every group. So this machine distribution shows the final state of the cluster. It is possible to get slightly different machine distribution according to order because the cluster is not something static. It is changing with time. Graph 1 shows the machine distribution according to CPU and memory. From this graph, it is easy to observe that more than 90% of the machines have 0.5 CPU and very few machines have 0.25 CPU.   
 
 &nbsp;
 &nbsp;
@@ -86,7 +88,7 @@ p +
 
 \pagebreak
 
-Table 1 show the same information with Graph 1 additionally it shows **capacity** metric and percentages of the machines in every capacity. I have created capacity metric. Capacity is average value of CPU and Memory capacity( Capacity = (CPU + Memory) / 2 ). This table shows the percentages of machines for every capacity. In next sections I will use this metric on plots.
+Table 1 show the same information with Graph 1 additionally it shows **capacity** metric and percentages of the machines in every capacity. I have created the capacity metric. Capacity is average value of CPU and Memory capacity( Capacity = (CPU + Memory) / 2 ). This table shows the percentages of machines for every capacity. In the next sections, I will use this metric on plots.
 
 
 ```{r, echo=FALSE}
@@ -98,7 +100,7 @@ kable(machineDistribution, caption="Machine distribution according to capacity")
 
 ### Machine Distibution According to Platform
 
-Machine distribution acording to platform is not significant because it is same with CPU distirbution. On the documentation it is stated that two machines with same platform id can have very different CPU and memory resources. Table 2 shows the machine distribution acccording to platform.
+Machine distribution according to the platform is not significant because it is the same with CPU distribution. On the documentation, it is stated that two machines with the same platform id can have very different CPU and memory resources. Table 2 shows the machine distribution according to the platform.
 
 
 ```{r echo=FALSE}
@@ -112,10 +114,9 @@ kable(machineDistribution, caption="Machine distribution according to platform i
 
 \pagebreak
 
-##2. On average, how many tasks compose a job?s
+##2. On average, how many tasks compose a jobs?
 
-I have used task events table to count the number of jobs and number of job per task. I have select distinct rows according to job_id and task_index then I grouped by according to job_id to count the number of task per job. Table 3 shows the total number of jobs, total number of tasks and average number of task per job.
-
+I have used task events table to count the number of jobs and number of task per job. I have select distinct rows according to job_id and task_index then I grouped by according to job_id to count the number of task per job. Table 3 shows the total number of jobs, the total number of tasks and the average number of task per job.
 
 ```{r, echo=FALSE}
 jobTaskCount = 
@@ -131,8 +132,7 @@ kable(df, caption="Job and task counts")
 
 ```
 
-Table 4 shows the statistics about number of tasks per job. From this statistics we can conclude that big part of the jobs contains only 1 task. Average number of task per job is **37.8342**. The job with biggest number of task has **90050** task.
-
+Table 4 shows the statistics about the number of tasks per job. From these statistics we can conclude that a big part of the jobs contains only 1 task. An average number of task per job is **37.8342**. The job with the biggest number of the task has **90050** task.
 
 ```{r,  echo=FALSE}
 summary<-summary(jobTaskCount$task_count)
@@ -147,8 +147,7 @@ kable(summaryDF, caption="Summary statistics of the number of task per job")
 
 ##3. Job/Task that got killed or evicted
 
-I have used job table and task event tables to count the number of evicted and killed jobs and tasks. Table 5 shows the figures related to job/task schedule, evicted and killed events.
-
+I have used job and task event tables to count the number of evicted and killed jobs and tasks. Table 5 shows the figures related to the job/task schedule, evicted and killed events.
 
 
 
@@ -181,9 +180,9 @@ kable(formatDataFrame (jobTaskCouns) , caption = "Job/task evicted killed count"
 
 ##4. Eviction Probability of Tasks with Respect to Priority
 
-I have used task events table to calculate efiction percentages of tasks accordign to priority. I have count the number of events according to priority and than I have calculated percentages of events on every priority. Table 5 shows the percentages of events according to priority. In this table, percentages are calculated according to task counts. *task_count* column shows the number of **unique** task on every priority level.
+I have used task events table to calculate eviction percentages of tasks according to priority. I have counted the number of events according to priority and then I have calculated percentages of events on every priority. Table 6 shows the percentages of events according to priority. In this table, percentages are calculated according to task counts. *task_count* column shows the number of **unique** task on every priority level.
 
-**When we analyse the data on the table we can not see any linear relation between priority of task and eviction counts however some priority levels have higher eviction percentages. On the documentation it had been stated that there are some special priority ranges : "free", "production" and "monitoring".**
+**When we analyze the data on the table we can not see any linear relationship between the priority of task and eviction counts, however, some priority levels have higher eviction percentages. On the documentation it had been stated that there are some special priority ranges as "free", "production" and "monitoring".**
 
 ```{r, echo=FALSE}
 priorityLifeCycleStats = 
@@ -209,13 +208,13 @@ kable( formatDataFrame( priorityLifeCycleStats[,c("priority","killed_percent", "
 
 \pagebreak
 
-##5. Relation between the Priority of a Task and Machine Resources(CPU, Memory)
+##5. The relation between the Priority of a Task and Machine Resources(CPU, Memory)
 
-Is there any relation between priority of tasks and machine resources which tasks are scheduled? I have used task events and machine events tables to answer this question. I have calculated distinct machine table from machine events and I have joined it with task events table than I have grouped by priority and *capacity* then I have count the number of  tasked scheduled.
+Is there any relation between the priority of tasks and machine resources which tasks are scheduled? I have used task events and machine events tables to answer this question. I have calculated distinct machine table from machine events and I have joined it with task events table than I have grouped by priority and *capacity* then I have count the number of tasks scheduled.
 
-Graph 2 show a heat map show the relation. In y axis we have the priorities of the tasks and on the x axis we have the capacity of the machines which are tasked scheduled. On the cell's we have the percentages of tasks which are schedulet on that knd of machines. Table 6 shows number of tasks according to priority of task. Also Table 1 shows the percentages of the machines according to capacity. **When we consider all the information on the heat map and tables we can conclude that tasks are uniformly distributed on the machines. There is no relation between priority of task and capacity of the machines.**
+Graph 2 shows a heat map. In this heat map,  on the y-axis, we have the priorities of the tasks and on the x-axis, we have the capacity of the machines which are tasked scheduled. On the cell's we have the percentages of tasks which are scheduled on that kind of machines. Table 7 shows the number of tasks according to the priority of a task. Also, Table 1 shows the percentages of the machines according to capacity. **When we consider all the information on the heat map and tables we can conclude that tasks are uniformly distributed on the machines according to priority. There is no relation between the priority of task and capacity of the machines.**
 
-For example, In the cluster, 53.5% of the machines have capacity of 0.49975(from Table 1). When we look at the values of the cell's on the heat map with capacit 0.49975 we can see that approximatly 55% of the tasks on all categories are scheduled on this kind of machines. We can do same observation for other capacities also. 
+For example, In the cluster, 53.5% of the machines have the capacity of 0.49975(from Table 1). When we look at the values of the cell's on the heat map with capacity 0.49975 we can see that approximately 55% of the tasks on all categories are scheduled on this kind of machines. We can do the same observation for other capacities. 
 
 &nbsp;
 &nbsp;
@@ -271,19 +270,21 @@ ggplot(data = priorityCapacityDataset, aes(x = capacity, y = priority)) +
 
 \pagebreak
 
-Table 6 shows the task distribution according to piority. In this table, task counts are not unique task counts because some tasks are rescheduled because of eviction or failure.
+Table 7 shows the task distribution according to priority. In this table, task counts are not unique task counts because some tasks are rescheduled because of eviction or failure.
 
 ```{r, echo=FALSE}
 kable( formatDataFrame( taskCountByPriority ), caption = 'Task counts according to priority of the task')
 #kable(machineDistribution, caption="Machine distribution according to capacity")
 ```
 
+\pagebreak
 
-##6. Tasks consumes significantly less resource than what they requested
+##6. Tasks consume significantly less resource than what they requested
 
-I have used special method to decide whether or not a task is using significantly less resource from what it requested. To decide this, I have looked at the tasks's maximum CPU and memory resource consumption. If both of the maximum values never reaches what it requested than I assumed that this task is using significantly less resource from what it requested. I have used **task events** and **task usage** tables to find the specific tasks. I have joined this two table then I have group by according to job_id and task_index and I have looked at the max velues of maximum cpu usage and maximum memory usage. Then I have decided whether or not a task using significantly less resource.
+I have used a special method to decide whether or not a task is using significantly less resource from what it requested. To decide this, I have looked at the tasks' maximum CPU and memory resource consumption. If both of the maximum values never reaches what it requested. I assumed that this task is using significantly less resource from what it requested. I have used **task events** and **task usage** tables to find the specific tasks. I have joined this two table then I have grouped by according to job_id and task_index and I have looked at the max values of maximum CPU usage and maximum memory usage. Then I have decided whether or not a task using significantly less resource.
 
-I have decided to create a histogram to have better understanding the resoruce consumption behavior of tasks which are using significantly less recoruces from what they requested. I have created two histogram. On the **X** axis I showed the resource consumption percentage according to what it requested on the **Y** I have showed the number of tasks. Graph 3 shows the memory consumption behavior and Graph 4 shows the CPU consumpsion behavior of the tasks which are usign significantly less resoruces from what they requested.
+I have decided to create a histogram to have a better understanding of the resource consumption behavior of tasks which are using significantly less resources from what they requested. I have created two histograms. On the **X** axis I showed the resource consumption percentage according to what it requested on the **Y** I have shown the number of tasks. Graph 3 shows the CPU consumption behavior and Graph 4 shows the memory consumption behavior of the tasks which are using significantly fewer resources from what they requested.
+
 
 ```{r results='asis', echo=FALSE, fig.height = 2.5}
 
@@ -302,13 +303,13 @@ consumptionDF <- data.frame(
 p1 <- ggplot(consumptionDF, aes(x=percentage, y=memory_consumption)) +
   geom_bar(stat="identity") + scale_x_continuous(breaks=c(0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100)) +
   theme(legend.position="none", axis.text.x = element_text(angle = 50, hjust = 1, size=6)) + scale_y_log10() + labs(y = "Number of Tasks", x="resource consumption percentage") +
-  ggtitle("Graph 3: Tasks consumes significantly less memory") +
+  ggtitle("Graph 3: Tasks consumes significantly less CPU") +
   theme(plot.title = element_text(hjust = 0.5, size = 8))
 
 p2 <- ggplot(consumptionDF, aes(x=percentage, y=cpu_consumption)) +
   geom_bar(stat="identity") + scale_x_continuous(breaks=c(0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100)) +
   theme(legend.position="none", axis.text.x = element_text(angle = 50, hjust = 1, size=6)) + scale_y_log10() + labs(y = "Number of Tasks", x="resource consumption percentage") +
-  ggtitle("Graph 4: Tasks consumes significantly less CPU") +
+  ggtitle("Graph 4: Tasks consumes significantly less memory") +
   theme(plot.title = element_text(hjust = 0.5, size = 8))
 
 grid.arrange(p1, p2, nrow = 1)
@@ -316,52 +317,101 @@ grid.arrange(p1, p2, nrow = 1)
 ```
 
 
+From these two histograms, we can conclude that there is around 10 million scheduled task which is using less than 5 percent of CPU and memory from what they requested.
+
 
 ##7. Machine availability
 
-I have conducted some analysis to have idea related to machine availibility. 
-I think this analysis can be useful to answer the next question because
+I have conducted some analysis to have an idea related to machine availability. 
 
 
-*1- What is the average time between two consecutive machine remove event.*
+*1- What is the average time between two consecutive machines remove event.*
 
 >Average time between two consecutive remove event is *279.7* Seconds.
 >
->According to the documentation, machine remove events can occure because of failures or maintenance
->so we can conclude that every *279.7* second there is a failure or maintanence in the cluster.
+>According to the documentation, the machine remove events can occur because of failures or maintenance
+>so we can conclude that every *279.7* second there is a failure or maintenance in the cluster.
 
-*2- Are there any machine which is removed from cluster and did not added to back.*
+*2- Are there any machine which is removed from the cluster and did not add to the back.*
 
-> *97* of the machines are removed from cluster and they are not added back.
-> This number could be helpful to make following analysis.
+> *97* of the machines are removed from the cluster and they are not added back.
+
+\pagebreak
 
 ##8. Machines which resources are largely underused 
 
-In the cluster, there are 36 machines wich highly underused. I have query all the machine usage data to find the machines which are under used.
+I have used task events table and task usage table to find machines which are resources largely underused. 
 
-```{r, echo=FALSE}
+When we check according to scheduled task counts: 
+In the cluster, there is 1 machine which has not any task scheduled.
+In the cluster, there are 45 machines which have less than 10 tasks scheduled. There are 238 machines which have less than 100 tasks scheduled.
 
-machineUtilization = 
+When we check according finished task counts: 
+In the cluster, there are 52 machines which have not any task finished.
+In the cluster, there are 98 machines which have less than 10 tasks finished. There are 336 machines which have less than 100 tasks finished.
+
+When we try to see the underused machines from task usage table we have a different story.
+When we grouped all the task usages according to the machine there are 36 machines which have not used.
+I have tried to measure a different metric which is machine utilization metric. For every task usage, I have calculated utilization as follows
+
+> machine_utilization = ( (task_end_time - task_start_time)/1000000 ) * assigned_memory_usage * sampled_CPU_usage)
+
+Then, I have grouped by task machine utilization parameters according to machine id and I have summed the machine utilization metric.
+According to this calculation, there are 36 machines which never utilized.
+
+Following two histogram shows the task schedule counts per machine and task finished counts per machine. There is a machine which has not a task scheduled on and there are some machines which have not finished a task.
+
+
+```{r, echo=FALSE, fig.height = 2.2}
+
+options(warn=-1)
+
+machineUtilization_scheduled_tasks = 
   read.csv("./result/question-6/scheduled-task-counts-on-machines.csv", header = TRUE)
 
-
-p<-ggplot(machineUtilization, aes(x=scheduled_task_count)) + 
+p1<-ggplot(machineUtilization_scheduled_tasks, aes(x=scheduled_task_count)) + 
   geom_histogram(color="black", fill="white", binwidth=50)
 
-p <- p + ggtitle("Graph 5: Scheduled task count per machine histogram") + theme(plot.title = element_text(hjust = 0.5, size = 8))
+p1 <- p1 + ggtitle("Graph 5: Scheduled task count per machine histogram") + theme(plot.title = element_text(hjust = 0.5, size = 8)) + labs(x = "scheduled task count", y = "number of machines")
 
-p
+p1
 
+```
+
+&nbsp;
+
+```{r, echo=FALSE, fig.height = 2.2}
+
+machineUtilization_finished_tasks = 
+  read.csv("./result/question-6/finished-task-counts-on-machines.csv", header = TRUE)
+
+
+p2<-ggplot(machineUtilization_finished_tasks, aes(x=scheduled_task_count)) + 
+  geom_histogram(color="black", fill="white", binwidth=50)
+
+p2 <- p2 + ggtitle("Graph 6: Finished task count per machine histogram") + theme(plot.title = element_text(hjust = 0.5, size = 8)) + labs(x = "finished task count", y = "number of machines")
+
+p2
 
 ```
 
 
+
+
+
 \pagebreak
 
+
+Table 8 shows the statistics related to the scheduled task per machine and finished task per machines.
+
 ```{r, echo=FALSE}
-summaryDF <- data.frame(unclass(summary(machineUtilization$scheduled_task_count)), check.names = FALSE, stringsAsFactors = FALSE)
-colnames(summaryDF)<- c("statistics")
-kable( summaryDF, caption = "Machine scheduled task count statistics")
+
+df <- data.frame("scheduled_task_stats"=machineUtilization_scheduled_tasks$scheduled_task_count, "finished_task_stats"=machineUtilization_finished_tasks$scheduled_task_count)
+summaryDF2 <- data.frame(unclass(apply(df, 2, summary)), check.names = FALSE, stringsAsFactors = FALSE)
+colnames(summaryDF2)<- c("scheduled_task_stats", "finished_task_stats")
+
+kable( summaryDF2, caption = "Machine scheduled and finished task statistics per machine")
+
 ```
 
 
@@ -370,29 +420,31 @@ kable( summaryDF, caption = "Machine scheduled task count statistics")
 
 #Performance Analyses of Apache Spark
 
-##1. Efect of Number of Worker Thread
+##1. Effect of Number of Worker Thread
 
-If there is enough input file to process than in this case number of worker threads effecting performance. If there is only one input file to process than number of worker threads has small performance effect.This Effect is not linear. For example to count all the distinct jobs in job tables with 8 worker thread takes 43 seconds. Same process takes 120 seconds with only one thread. For only one input file with single worker thread same job takes 15 seconds and with 8 worker thread it takes 14 seconds.
+If there is enough input file to process than in this case the number of worker threads affecting performance. If there is only one input file to process than the number of worker threads has a small performance effect. This Effect is not linear. For example, to count all the distinct jobs in job tables with 8 worker thread takes 43 seconds. The same process takes 120 seconds with only one thread. For only one input file with a single worker thread the same job takes 15 seconds and with 8 worker thread, it takes 14 seconds.
 
 
-##2. Efect of JVM Memory Size
+##2. Effect of JVM Memory Size
 
-Normally in the spark cluster there is two kind of process driver and executor.There is two different parameter to control the JVM memory size. These parameters are "spark.driver.memory" and "spark.executor.memory". Normall this two parameter have different effect but in our case "spark.executor.memory" parameter is not useful because we are running Spark in local mode which means that driver process spawning executor threads to do the processing so there is only one JVM which is dirver JVM. Because of this reason I can only assess the effect of "spark.driver.memory" parameter.
+Normally in the spark cluster, there is two kind of process driver and executor. There is two different parameter to control the JVM memory size. These parameters are "spark.driver.memory" and "spark.executor.memory". Normally this two-parameter have a different effect but in our case "spark.executor.memory" parameter is not useful because we are running Spark in the local mode which means that driver process spawning executor threads to do the processing so there is only one JVM which is driver JVM. Because of this reason, I can only assess the effect of "spark.driver.memory" parameter.
 
-When we increase the memory size of the driver process, we can easily observe via using system tools(system monitor, top, htop) driver JVM is instantiated with specified memory and it is using the reserved memory. Also for caching spark is using  memory on default so if there is enough memory caching effect could be big incase of all the cached data small enoug to fit in memory.
+When we increase the memory size of the driver process, we can easily observe via using system tools(system monitor, top, htop) driver JVM is instantiated with specified memory and it is using the reserved memory. Also for caching, spark is using memory on default so if there is enough memory caching effect could be big in case of all the cached data small enough to fit in memory.
 
-During my study, I have java.lang.OutOfMemoryError incase of collecting huge amount of data at driver process. Arranging JVM memory size could solve this problem.
+During my study, I have java.lang.OutOfMemoryError in case of collecting a huge amount of data at driver process. Arranging the JVM memory size could solve this problem.
 
 ##3. Effect of Lazy Evaluation
 
+Spark has two important notion: transformation and action. If there is no action than spark does not apply the transformations. This is called lazy evaluation. If there is action than spark applies transformations to RDD's and it produces results. This means that if you do not have any action in your spark code than spark will not do anything and it will return very fast. Lazy evaluation gives the opportunity to spark optimize user queries in terms of processed data. There is no way to force Spark to evaluate transformations eagerly.
 
+##4. Effect of Cache (Persisting)
 
-##4. Effect of Cache
+Cache has a big impact on performance. In normal conditions spark is not caching RDD's. Assume that you are making a calculation and you are counting the number of elements in the RDD later you tried to save the RDD to a CSV file. Without caching Spark will calculate same RDD two times, once for counting once for writing to CSV file. With caching it will only calculate once and it will use the result of the same calculation for counting and writing to CSV file.
 
-Cache has a big impect to performance. In normal conditions spark is not caching RDD's. Assume that you are making a calculation and you are counting the number of elements in the RDD later you tried to save the RDD to a csv file. Without caching Spark will calculate same RDD two times, once for counting once for writing to csv file. With cachign it will only calculate once and it will use the result of the same calculation for counting and writing to csv file.
-
-At teh beginning of this study I was showing result of the RDD's and later I was tring to do further processing without caching. In this case, it was taking two times more time to finih the job. Later, I realized the effect of caching and I tried to used caching when it is necessary.
+At the beginning of this study I was showing the result of the RDD's and later I was trying to do further processing without caching. In this case, it was taking two times more time to finish the job. Later, I realized the effect of caching and I tried to use caching when it is necessary.
 
 #Conclution
+
+In this worked, I have used Spark to analyze the trace of the Google cluster. I have used the Data Frame API. I have an opportunity to see the workload of a real cluster. I have evaluated the cluster load and machines of the cluster. I have evaluated the performance of the Spark with big data.
 
 
