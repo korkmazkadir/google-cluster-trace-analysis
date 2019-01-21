@@ -335,10 +335,36 @@ I think this analysis can be useful to answer the next question because
 > *97* of the machines are removed from cluster and they are not added back.
 > This number could be helpful to make following analysis.
 
-
 ##8. Machines which resources are largely underused 
 
 In the cluster, there are 36 machines wich highly underused. I have query all the machine usage data to find the machines which are under used.
+
+```{r, echo=FALSE}
+
+machineUtilization = 
+  read.csv("./result/question-6/scheduled-task-counts-on-machines.csv", header = TRUE)
+
+
+p<-ggplot(machineUtilization, aes(x=scheduled_task_count)) + 
+  geom_histogram(color="black", fill="white", binwidth=50)
+
+p <- p + ggtitle("Graph 5: Scheduled task count per machine histogram") + theme(plot.title = element_text(hjust = 0.5, size = 8))
+
+p
+
+
+```
+
+
+\pagebreak
+
+```{r, echo=FALSE}
+summaryDF <- data.frame(unclass(summary(machineUtilization$scheduled_task_count)), check.names = FALSE, stringsAsFactors = FALSE)
+colnames(summaryDF)<- c("statistics")
+kable( summaryDF, caption = "Machine scheduled task count statistics")
+```
+
+
 
 
 
